@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>APIGestorDocumentosCore</name>
+    </assembly>
+    <members>
+        <member name="M:APIGestorDocumentosCore.Controllers.CuentasController.Login(APIGestorDocumentosCore.Models.UserInfo)">
+            <summary>
+            Verifica que el usuario exista, si existe envia token (con tiempo de expiración), para consumir la API
+            </summary>
+            <param name="userInfo"></param>
+            <returns>Token para verificar autentificación</returns>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.Buscar(System.String,System.Int32)">
+            <summary>
+            Busca documento con la palabra clave y paginación según necesiten.
+            </summary>
+            <param name="texto"></param>
+            <param name="pagina"></param>
+            <returns>devuelve un Json con la información solicitada.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>               
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.Agregar(System.String)">
+            <summary>
+            agrega documento en formato XML, a la base de datos del Solr
+            </summary>
+            <param name="xmlData"></param>
+            <returns></returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.AgregarMA(APIGestorDocumentosCore.Models.MedioAmbiental,System.Boolean)">
+            <summary>
+            agrega documento en formato XML, a la base de datos del Solr
+            </summary>
+            <param name="ma">Objeto Medio ambiental</param>
+            <param name="nuevo">si el documento es nuevo</param>
+            <returns></returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.QueryById(System.String)">
+            <summary>
+            Busca documento po id del Solr
+            </summary>
+            <param name="id"></param>
+            <returns>devuelve objeto Json con información del documento.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.Filtro(APIGestorDocumentosCore.Models.FormularioBusqueda)">
+            <summary>
+            Busca documentos segun filtro entregado.
+            </summary>
+            <param name="form">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarNG(APIGestorDocumentosCore.Models.NormasGenerales)">
+            <summary>
+            Busca documentos en normas generales segun filtro entregado.
+            </summary>
+            <param name="nor">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarNP(APIGestorDocumentosCore.Models.NormasPerticulares)">
+            <summary>
+            Busca documentos en normas particulares segun filtro entregado.
+            </summary>
+            <param name="nor">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarPJ(APIGestorDocumentosCore.Models.PublicacionesJudiciales)">
+            <summary>
+            Busca documentos en publicaciones judiciales segun filtro entregado.
+            </summary>
+            <param name="nor">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarA(APIGestorDocumentosCore.Models.Avisos)">
+            <summary>
+            Busca documentos en avisos segun filtro entregado.
+            </summary>
+            <param name="nor">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarLA(APIGestorDocumentosCore.Models.LegislacionActualizada)">
+            <summary>
+            Busca documentos en Legislación Actualizada segun filtro entregado.
+            </summary>
+            <param name="nor">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarNM(APIGestorDocumentosCore.Models.DatosAmbiental)">
+            <summary>
+            Busca documentos en Medio Ambiental segun filtro entregado.
+            </summary>
+            <param name="nor">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.ImagenesDoe(System.String)">
+            <summary>
+            Busca imagen del documento recepcionado.
+            </summary>
+            <param name="imagen"></param>
+            <returns>devuelve un Json con la imagen en bit.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>               
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.Notas(System.String)">
+            <summary>
+            Busca la notas del documento recepcionado.
+            </summary>
+            <param name="id"></param>
+            <returns>devuelve un Json con la nota en html.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>               
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.VerVersion(System.String)">
+            <summary>
+            Busca la version del documento recepcionado.
+            </summary>
+            <param name="id"></param>
+            <returns>devuelve un Json con el documento versionado en html.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>               
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Exceptions.TechnicalException.#ctor(System.String,System.Exception,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Construye una instancia en base a un mensaje de error y la una excepción original.
+            </summary>
+            <param name="mensaje">El mensaje de error.</param>
+            <param name="original">La excepción original.</param>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Exceptions.TechnicalException.#ctor(System.String,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Construye una instancia en base a un mensaje de error.
+            </summary>
+            <param name="mensaje">El mensaje de error.</param>
+        </member>
+    </members>
+</doc>
