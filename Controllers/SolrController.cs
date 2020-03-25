@@ -54,9 +54,9 @@ namespace APIGestorDocumentosCore.Controllers
                 String urlAddress = "";
                 string urlSolr = _configuration["webSolr"].Trim();
                 if (texto == "")
-                    urlAddress = urlSolr + "/solr/test-1/select?hl.fl=texto&hl=on&q=*%3A*&rows=5&start=0";
+                    urlAddress = urlSolr + "/solr/SGD-DOE/select?hl.fl=texto&hl=on&q=*%3A*&rows=5&start=0";
                 else
-                    urlAddress = urlSolr + "/solr/test-1/select?fl=id%2CIdDocumento%2CCategoria%2CNorma%2CNumero%2C%20Organismo&hl.fl=Texto&hl.simple.post=%3C%2Flabel%3E&hl.simple.pre=%3Clabel%20style%3D%22background-color%3A%20yellow%22%3E&hl=on&q=Texto%3A\"" + texto + "\"&rows=5&start=" + pagina + "&wt=json";
+                    urlAddress = urlSolr + "/solr/SGD-DOE/select?fl=id%2CIdDocumento%2CCategoria%2CNorma%2CNumero%2C%20Organismo&hl.fl=Texto&hl.simple.post=%3C%2Flabel%3E&hl.simple.pre=%3Clabel%20style%3D%22background-color%3A%20yellow%22%3E&hl=on&q=Texto%3A\"" + texto + "\"&rows=5&start=" + pagina + "&wt=json";
 
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(urlAddress);
                 HttpWebResponse response;
@@ -261,7 +261,7 @@ namespace APIGestorDocumentosCore.Controllers
             try
             {
                 string urlSolr = _configuration["webSolr"];
-                string url = urlSolr + "/solr/test-1/select?q=id%3A" + id + "%20OR%20IdDocumento%3A" + id;
+                string url = urlSolr + "/solr/SGD-DOE/select?q=id%3A" + id + "%20OR%20IdDocumento%3A" + id;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -331,6 +331,116 @@ namespace APIGestorDocumentosCore.Controllers
             }
         }
 
+
+        /// <summary>
+        /// Busca documento po id del Solr
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns>devuelve objeto Json con información del documento.</returns>
+        /// <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+        /// <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("getIdByJd")]
+        public ActionResult<Response> getIdByJd(string jd)
+        {
+            Response resp = new Response();
+            string directorio_ma = _configuration["PATH_:key"];
+            string id = string.Empty;
+            try
+            {
+                string urlSolr1 = _configuration["webSolr"];
+                string url1 = urlSolr1 + "/solr/SGD-DOE/select?q=JD%3A" + id; ;
+                HttpWebRequest request1 = (HttpWebRequest)WebRequest.Create(url1);
+                HttpWebResponse response1;
+                response1 = (HttpWebResponse)request1.GetResponse();
+
+                string responseStr1 = "";
+                if (response1.StatusCode == HttpStatusCode.OK)
+                {
+                    Stream responseStream = response1.GetResponseStream();
+                    responseStr1 = new StreamReader(responseStream).ReadToEnd();
+                }
+
+                var expConverter1 = new ExpandoObjectConverter();
+                dynamic obj1 = JsonConvert.DeserializeObject<ExpandoObject>(responseStr1, expConverter1);
+                foreach (var doc_ in obj1.response.docs)
+                {
+                    id = doc_.IdDocumento;
+                    break;
+                }
+
+                string urlSolr = _configuration["webSolr"];
+                string url = urlSolr + "/solr/SGD-DOE/select?q=id%3A" + id + "%20OR%20IdDocumento%3A" + id;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebResponse response;
+                response = (HttpWebResponse)request.GetResponse();
+
+                string responseStr = "";
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    Stream responseStream = response.GetResponseStream();
+                    responseStr = new StreamReader(responseStream).ReadToEnd();
+                }
+
+                var expConverter = new ExpandoObjectConverter();
+                dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(responseStr, expConverter);
+                string idDocumento = "";
+                string id_ = "";
+                string Coleccion = "";
+                string Origen = "";
+                string Fecha = "";
+                string xml = "";
+                foreach (var doc_ in obj.response.docs)
+                {
+                    foreach (var v in doc_.Coleccion)
+                    {
+                        Coleccion = v;
+                    }
+                    try
+                    {
+                        Origen = doc_.Origen;
+                    }
+                    catch { }
+                    id_ = doc_.id;
+                    idDocumento = doc_.IdDocumento;
+                    Fecha = Convert.ToString(doc_.Fecha);
+                    //Norma = (doc_.Norma).Replace(" ", "_") + "\\";
+                }
+                if (Origen == "")
+                    Origen = Coleccion;
+                else
+                    Coleccion = Origen;
+
+                if (Coleccion != "BITE" && Coleccion != "MA" && Coleccion != "LA")
+                {
+                    DateTime fechadoc = Convert.ToDateTime(Fecha);
+                    Fecha = fechadoc.ToString("dd-MM-yyyy");
+                    string[] f = Fecha.Split('-');
+                    Fecha = f[2] + "\\" + f[1] + "\\" + f[0];
+                    Coleccion = "DOE\\" + Fecha;
+                }
+                string ruta = directorio_ma + Coleccion + "\\" + idDocumento + ".xml";
+                xml = System.IO.File.ReadAllText(ruta);
+
+
+                resp.Code = "OK";
+                resp.Message = "Búsqueda exitosa";
+                resp.Data = xml;
+                return resp;
+
+            }
+            catch (Exception ex)
+            {
+                new TechnicalException("Error metodo getIdByJd", ex, _configuration);
+                resp.Code = "NotFound";
+                resp.Message = string.Empty;
+                resp.Data = "No es posible buscar por id de documento (JD), por favor volver a intentar más tarde.";
+
+                return resp;
+            }
+        }
 
         /// <summary>
         /// Busca documentos segun filtro entregado.
@@ -469,7 +579,7 @@ namespace APIGestorDocumentosCore.Controllers
                 string url = "select?fl=" + fl + coleccion + bNorma + bDatos + "&sort=" + orden + " asc&start=" + pagina;
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
-                string fUrl = _configuration["webSolr"] + "/solr/test-1/" + url;
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -606,7 +716,7 @@ namespace APIGestorDocumentosCore.Controllers
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
 
-                string fUrl = _configuration["webSolr"] + "/solr/test-1/" + url;
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -692,7 +802,7 @@ namespace APIGestorDocumentosCore.Controllers
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'PATENTE' OR Norma:'MODELO' OR Norma:'DISEÑO'" : "Norma:'DECRETO' OR Norma:'MODELO' OR Norma:'DISEÑO'";
                 if (!String.IsNullOrEmpty(nor.pm))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'ART 83' OR Norma:'PEDIMENTOS MINEROS' OR Norma:'MANIFESTACIONES MINERAS' OR Norma:'SOLICITUDES DE MENSURA' OR Norma:'SENTENCIA EXPLORACION' OR Norma:'SENTENCIA EXPLOTACION' OR Norma:'VIGENCIA MENSURA' OR Norma:'RENUNCIA CONCESION' OR Norma:'PRORROGA EXPLORACION' OR Norma:'NOMINA REMATE' OR Norma:'ACUERDO JUNTA' OR Norma:'CITACION JUNTA' OR Norma:'NOMINA PATENTE' OR Norma:'ACUERDO CONCESION'" : "Norma:'ART 83' OR Norma:'PEDIMENTOS MINEROS' OR Norma:'MANIFESTACIONES MINERAS' OR Norma:'SOLICITUDES DE MENSURA' OR Norma:'SENTENCIA EXPLORACION' OR Norma:'SENTENCIA EXPLOTACION' OR Norma:'VIGENCIA MENSURA' OR Norma:'RENUNCIA CONCESION' OR Norma:'PRORROGA EXPLORACION' OR Norma:'NOMINA REMATE' OR Norma:'ACUERDO JUNTA' OR Norma:'CITACION JUNTA' OR Norma:'NOMINA PATENTE' OR Norma:'ACUERDO CONCESION'";
-                if(!String.IsNullOrEmpty(nor.ot))
+                if (!String.IsNullOrEmpty(nor.ot))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'PROTOCOLIZACION' OR Norma:'INFORMACION SORTEO' OR Norma:'CERTIFICACION' OR Norma:'CERTIFICADO' OR Norma:'LISTA DCTO' OR Norma:'IMPACTO AMBIENTAL' OR Norma:'PLANTA RESIDUOS' OR Norma:'ACUERDO' OR Norma:'REGISTRO VARIEDAD' OR Norma:'LISTA NOMBRAMIENTO' OR Norma:'PARTIDO'" : "Norma:'PROTOCOLIZACION' OR Norma:'INFORMACION SORTEO' OR Norma:'CERTIFICACION' OR Norma:'CERTIFICADO' OR Norma:'LISTA DCTO' OR Norma:'IMPACTO AMBIENTAL' OR Norma:'PLANTA RESIDUOS' OR Norma:'ACUERDO' OR Norma:'REGISTRO VARIEDAD' OR Norma:'LISTA NOMBRAMIENTO' OR Norma:'PARTIDO'";
 
 
@@ -747,12 +857,15 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!string.IsNullOrEmpty(nor.ninguna))
                     q += " AND NOT Texto :'" + nor.ninguna + "'";
 
+                if (q != "")
+                    bDatos = q;
+
                 string destacado = "&hl.fl=Texto&hl.simple.post=<%2Fspan>&hl.simple.pre=<span%20class%3D%27MatchDestacado%27>&hl=on";
 
                 string url = "select?fl=" + fl + coleccion + bNorma + bDatos + destacado + "&sort=Fecha asc &start=" + nor.Pagina;
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
-                string fUrl = _configuration["webSolr"] + "/solr/test-1/" + url;
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -833,12 +946,25 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!string.IsNullOrEmpty(nor.FechaD))
                 {
                     fecha = nor.FechaD.Replace("/", "-");
+                    DateTime fechadoc = Convert.ToDateTime(fecha);
+                    fecha = fechadoc.ToString("dd-MM-yyyy");
                     string[] f = fecha.Split('-');
                     fecha = f[2] + "-" + f[1] + "-" + f[0] + @"T00:00:00Z";
-                    fecha2 = nor.FechaH.Replace("/", "-");
-                    f = fecha2.Split('-');
-                    fecha2 = f[2] + "-" + f[1] + "-" + f[0] + @"T00:00:00Z";
-                    q += " AND Fecha:'" + fecha + " A " + fecha2 + "'";
+
+
+                    if (!string.IsNullOrEmpty(nor.FechaH))
+                    {
+                        fecha2 = nor.FechaH.Replace("/", "-");
+                        fechadoc = Convert.ToDateTime(fecha2);
+                        fecha2 = fechadoc.ToString("dd-MM-yyyy");
+                        f = fecha2.Split('-');
+                        fecha2 = f[2] + "-" + f[1] + "-" + f[0] + @"T00:00:00Z";
+                        q += " AND Fecha:[" + fecha + " TO " + fecha2 + "]";
+                    }
+                    else
+                    {
+                        q += " AND Fecha:'" + fecha + "'";
+                    }
                 }
 
                 if (!String.IsNullOrEmpty(nor.exacta))
@@ -857,12 +983,15 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!string.IsNullOrEmpty(nor.plus))
                     q += " AND Texto:'*" + nor.plus + "*'";
 
+                if (q != "")
+                    bDatos = q;
+
                 string destacado = "&hl.fl=Texto&hl.simple.post=<%2Fspan>&hl.simple.pre=<span%20class%3D%27MatchDestacado%27>&hl=on";
 
                 string url = "select?fl=" + fl + coleccion + bNorma + bDatos + destacado + "&sort=Fecha asc &start=" + nor.pagina;
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
-                string fUrl = _configuration["webSolr"] + "/solr/test-1/" + url;
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -982,12 +1111,15 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!string.IsNullOrEmpty(nor.plus))
                     q += " AND Texto:'*" + nor.plus + "*'";
 
+                if (q != "")
+                    bDatos = q;
+
                 string destacado = "&hl.fl=Texto&hl.simple.post=<%2Fspan>&hl.simple.pre=<span%20class%3D%27MatchDestacado%27>&hl=on";
 
                 string url = "select?fl=" + fl + coleccion + bNorma + bDatos + destacado + "&sort=Fecha asc &start=" + nor.pagina;
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
-                string fUrl = _configuration["webSolr"] + "/solr/test-1/" + url;
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -1127,13 +1259,16 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!string.IsNullOrEmpty(nor.todas))
                     q += " AND Texto:'" + nor.todas + "'";
 
+                if (q != "")
+                    bDatos = q;
+
                 string destacado = "&hl.fl=Texto&hl.simple.post=<%2Fspan>&hl.simple.pre=<span%20class%3D%27MatchDestacado%27>&hl=on";
 
 
                 string url = "select?fl=" + fl + coleccion + bNorma + bDatos + destacado + "&sort=Fecha asc &start=" + nor.pagina;
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
-                string fUrl = _configuration["webSolr"] + "/solr/test-1/" + url;
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -1189,10 +1324,14 @@ namespace APIGestorDocumentosCore.Controllers
                 string bDatos = string.Empty;
                 string fecha = string.Empty;
                 string fecha2 = string.Empty;
+                string categoria = string.Empty;
+                string tema = string.Empty;
                 string coleccion = "&q=Coleccion:'MA'";
                 string fl = "Norma,Numero,Articulo,Inciso,Titulo,Fecha,IdDocumento,Organismo,Estado,Partes,Tribunal,Propiedad";
 
-                if (!String.IsNullOrEmpty(nor.ley))
+                if (!String.IsNullOrEmpty(nor.con))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'LEY'" : "Norma:'LEY'";
+                if (!String.IsNullOrEmpty(nor.conmin))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'LEY'" : "Norma:'LEY'";
                 if (!String.IsNullOrEmpty(nor.cir))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'CIRCULAR'" : "Norma:'CIRCULAR'";
@@ -1216,6 +1355,14 @@ namespace APIGestorDocumentosCore.Controllers
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'RES'" : "Norma:'RES'";
                 if (!String.IsNullOrEmpty(nor.pro))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'PROTOCOLO'" : "Norma:'PROTOCOLO'";
+
+                string qq = string.Empty;
+                if (!string.IsNullOrEmpty(q))
+                {
+                    categoria += (!String.IsNullOrEmpty(categoria)) ? " OR Categoria: 'BIOTICO'" : " Categoria: 'BIOTICO'";
+                    tema += (!String.IsNullOrEmpty(categoria)) ? " OR Tema: 'BIOTICO'" : " Tema: 'BIOTICO'";
+                    qq += q;
+                }
 
                 if (!String.IsNullOrEmpty(nor.ap))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Tema:'AREAS PROTEGIDAS'" : "Tema:'AREAS PROTEGIDAS'";
@@ -1266,6 +1413,13 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!String.IsNullOrEmpty(nor.resi))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Tema:'RESIDUOS'" : "Tema:'RESIDUOS'";
 
+                if (!string.IsNullOrEmpty(q))
+                {
+                    categoria += (!String.IsNullOrEmpty(categoria)) ? " OR Categoria: 'SOCIAL' OR Categoria: 'CONSTRUIDO'" : " Categoria: 'BIOTICO' OR Categoria: 'CONSTRUIDO'";
+                    tema += (!String.IsNullOrEmpty(categoria)) ? " OR Tema: 'SOCIAL'" : " Tema: 'SOCIAL'";
+                    qq += q;
+                }
+
                 if (!String.IsNullOrEmpty(nor.tribunal))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Organismo:'TRIBUNAL CONSTITUCIONAL'" : "Organismo:'TRIBUNAL CONSTITUCIONAL'";
                 if (!String.IsNullOrEmpty(nor.pta))
@@ -1282,6 +1436,15 @@ namespace APIGestorDocumentosCore.Controllers
                     q += (!String.IsNullOrEmpty(q)) ? " OR Organismo:'CORTE DE APELACIONES'" : "Organismo:'CORTE DE APELACIONES'";
                 if (!String.IsNullOrEmpty(nor.ttp))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Organismo:'TERCER TRIBUNAL AMBIENTAL'" : "Organismo:'TERCER TRIBUNAL AMBIENTAL'";
+
+                if (!string.IsNullOrEmpty(q))
+                {
+                    categoria += (!String.IsNullOrEmpty(categoria)) ? " Categoria: 'FISICO' " : " OR Categoria: 'FISICO'";
+                    tema += (!String.IsNullOrEmpty(categoria)) ? " Tema: 'FISICO'" : " OR Tema: 'FISICO'";
+                    qq += q;
+                }
+
+                q = qq;
 
                 if (!String.IsNullOrEmpty(q))
                     bNorma = " AND (" + q + ")";
@@ -1338,8 +1501,11 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!string.IsNullOrEmpty(nor.numNorma))
                     q += " AND Numero:'" + nor.numNorma + "'";
 
-                if(!string.IsNullOrEmpty(nor.organismo))
+                if (!string.IsNullOrEmpty(nor.organismo))
                     q += " AND Organismo:'" + nor.organismo + "'";
+
+                if (q != "")
+                    bDatos = q;
 
                 string destacado = "&hl.fl=Texto&hl.simple.post=<%2Fspan>&hl.simple.pre=<span%20class%3D%27MatchDestacado%27>&hl=on";
 
@@ -1347,7 +1513,7 @@ namespace APIGestorDocumentosCore.Controllers
                 string url = "select?fl=" + fl + coleccion + bNorma + bDatos + destacado + "&sort=Fecha asc &start=" + nor.pagina;
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
-                string fUrl = _configuration["webSolr"] + "/solr/test-1/" + url;
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -1484,7 +1650,7 @@ namespace APIGestorDocumentosCore.Controllers
                 string idOri = split[0];
                 string versionDoc = split[1];
                 string urlSolr = _configuration["webSolr"];
-                string url = urlSolr + "/solr/test-1/select?q=id%3A" + idOri + "%20OR%20IdDocumento%3A" + idOri;
+                string url = urlSolr + "/solr/SGD-DOE/select?q=id%3A" + idOri + "%20OR%20IdDocumento%3A" + idOri;
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                 HttpWebResponse response;
                 response = (HttpWebResponse)request.GetResponse();
@@ -1559,6 +1725,295 @@ namespace APIGestorDocumentosCore.Controllers
             StringWriter myWriter = new StringWriter();
             HttpUtility.HtmlDecode(texto, myWriter);
             return myWriter.ToString();
+        }
+
+        /// <summary>
+        /// Busca documentos en BITE segun filtro entregado.
+        /// </summary>
+        /// <param name="nor">Objeto con filtro para la busqueda.</param>
+        /// <returns>Lista de aciertos segun criterios entregados.</returns>
+        /// <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+        /// <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("BuscarSociedad")]
+        public ActionResult<Response> BuscarBite(Bite nor)
+        {
+            Response resp = new Response();
+
+            try
+            {
+                string q = string.Empty;
+                string bNorma = string.Empty;
+                string bDatos = string.Empty;
+                string fecha = string.Empty;
+                string fecha2 = string.Empty;
+                string coleccion = "&q=Coleccion:'BITE'";
+                string fl = "Norma,Numero,Articulo,Inciso,Titulo,Fecha,IdDocumento,Organismo,Estado,Partes,Tribunal,Propiedad";
+
+                if (!String.IsNullOrEmpty(nor.codt))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'Código Tributario'" : "Norma:'Código Tributario'";
+                if (!String.IsNullOrEmpty(nor.com))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'COMENTARIO'" : "Norma:'COMENTARIO'";
+                if (!String.IsNullOrEmpty(nor.jj))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'JURISPRUDENCIA JUDICIAL'" : "Norma:'JURISPRUDENCIA JUDICIAL'";
+                if (!String.IsNullOrEmpty(nor.ej))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'EJEMPLOS'" : "Norma:'EJEMPLOS'";
+                if (!String.IsNullOrEmpty(nor.circ))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'CIRCULAR'" : "Norma:'CIRCULAR'";
+                if (!String.IsNullOrEmpty(nor.ofi))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'OFICIO'" : "Norma:'OFICIO'";
+                if (!String.IsNullOrEmpty(nor.res))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'RESOLUCION'" : "Norma:'RESOLUCION'";
+                if (!String.IsNullOrEmpty(nor.lyd))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'DECRETO'" : "Norma:'DECRETO'";
+
+                if (!String.IsNullOrEmpty(q))
+                    bNorma = " AND (" + q + ")";
+
+                q = string.Empty;
+
+                if (!string.IsNullOrEmpty(nor.FechaD))
+                {
+                    fecha = nor.FechaD.Replace("/", "-");
+                    DateTime fechadoc = Convert.ToDateTime(fecha);
+                    fecha = fechadoc.ToString("dd-MM-yyyy");
+                    string[] f = fecha.Split('-');
+                    fecha = f[2] + "-" + f[1] + "-" + f[0] + @"T00:00:00Z";
+
+
+                    if (!string.IsNullOrEmpty(nor.FechaH))
+                    {
+                        fecha2 = nor.FechaH.Replace("/", "-");
+                        fechadoc = Convert.ToDateTime(fecha2);
+                        fecha2 = fechadoc.ToString("dd-MM-yyyy");
+                        f = fecha2.Split('-');
+                        fecha2 = f[2] + "-" + f[1] + "-" + f[0] + @"T00:00:00Z";
+                        q += " AND Fecha:[" + fecha + " TO " + fecha2 + "]";
+                    }
+                    else
+                    {
+                        q += " AND Fecha:'" + fecha + "'";
+                    }
+
+                }
+
+                if (!string.IsNullOrEmpty(nor.numero))
+                    q += " AND Numero:'" + nor.numero + "'";
+
+                if (!string.IsNullOrEmpty(nor.articulo))
+                    q += " AND Articulo:'" + nor.articulo + "'";
+
+                if (!string.IsNullOrEmpty(nor.alltext))
+                    q += " AND Texto:'*" + nor.alltext + "*'";
+
+                if (q != "")
+                    bDatos = q;
+
+                string destacado = "&hl.fl=Texto&hl.simple.post=<%2Fspan>&hl.simple.pre=<span%20class%3D%27MatchDestacado%27>&hl=on";
+
+                string url = "select?fl=" + fl + coleccion + bNorma + bDatos + destacado + "&q=Estado:'98'&sort=Fecha asc &start=" + nor.pagina;
+                url = url.Replace("  ", " ");
+                url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
+
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
+                HttpWebResponse response;
+                response = (HttpWebResponse)request.GetResponse();
+
+                string responseStr = "";
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    Stream responseStream = response.GetResponseStream();
+                    responseStr = new StreamReader(responseStream).ReadToEnd();
+                }
+
+                var expConverter = new ExpandoObjectConverter();
+                dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(responseStr, expConverter);
+
+                resp.Code = "OK";
+                resp.Message = "Búsqueda exitosa";
+                resp.Data = JsonConvert.SerializeObject(obj.response);
+                resp.highlighting = JsonConvert.SerializeObject(obj.highlighting);
+
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                new TechnicalException("Error metodo BuscarBite", ex, _configuration);
+                resp.Code = "NotFound";
+                resp.Message = string.Empty;
+                resp.Data = "No es posible buscar por Buscar, por favor volver a intentar más tarde.";
+
+                return resp;
+            }
+        }
+
+        /// <summary>
+        /// Busca documentos en Sociedades segun filtro entregado.
+        /// </summary>
+        /// <param name="soc">Objeto con filtro para la busqueda.</param>
+        /// <returns>Lista de aciertos segun criterios entregados.</returns>
+        /// <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+        /// <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("BuscarSociedad")]
+        public ActionResult<Response> BuscarSociedad(Sociedad soc)
+        {
+            Response resp = new Response();
+
+            try
+            {
+                string q = string.Empty;
+                string bNorma = string.Empty;
+                string bDatos = string.Empty;
+                string fecha = string.Empty;
+                string fecha2 = string.Empty;
+                string coleccion = "&q=Coleccion:''";
+                string fl = "Norma,Numero,Articulo,Inciso,Titulo,Fecha,IdDocumento,Organismo,Estado,Partes,Tribunal,Propiedad";
+
+                if (!String.IsNullOrEmpty(soc.DO))
+                {
+                    coleccion = "&q=Coleccion:'DONG'";
+                }
+
+                if (!String.IsNullOrEmpty(soc.RES))
+                {
+                    coleccion = "&q=Coleccion:'RES'";
+                }
+
+
+                if (!String.IsNullOrEmpty(soc.Modificacion))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'SOCIEDAD MODIFICACION' OR Norma:'EMPRESA INDIVIDUAL MODIFICACION' OR Norma:'OTRA SOCIEDAD MODIFICACION' " : "Norma:'SOCIEDAD MODIFICACION' OR Norma:'EMPRESA INDIVIDUAL MODIFICACION' OR Norma:'OTRA SOCIEDAD MODIFICACION' ";
+                if (!String.IsNullOrEmpty(soc.Constitucion))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'SOCIEDAD CONSTITUCION' OR Norma:'EMPRESA INDIVIDUAL CONSTITUCION' OR Norma:'OTRA SOCIEDAD CONSTITUCION' " : "Norma:'SOCIEDAD CONSTITUCION' OR Norma:'EMPRESA INDIVIDUAL CONSTITUCION' OR Norma:'OTRA SOCIEDAD CONSTITUCION' ";
+                if (!String.IsNullOrEmpty(soc.Disolucion))
+                    q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'SOCIEDAD DISOLUCION' OR Norma:'EMPRESA INDIVIDUAL DISOLUCION' OR Norma:'OTRA SOCIEDAD DISOLUCION' " : "Norma:'SOCIEDAD DISOLUCION' OR Norma:'EMPRESA INDIVIDUAL DISOLUCION' OR Norma:'OTRA SOCIEDAD DISOLUCION' ";
+
+
+                if (!string.IsNullOrEmpty(soc.FechaD))
+                {
+                    fecha = soc.FechaD.Replace("/", "-");
+                    DateTime fechadoc = Convert.ToDateTime(fecha);
+                    fecha = fechadoc.ToString("dd-MM-yyyy");
+                    string[] f = fecha.Split('-');
+                    fecha = f[2] + "-" + f[1] + "-" + f[0] + @"T00:00:00Z";
+
+
+                    if (!string.IsNullOrEmpty(soc.FechaH))
+                    {
+                        fecha2 = soc.FechaH.Replace("/", "-");
+                        fechadoc = Convert.ToDateTime(fecha2);
+                        fecha2 = fechadoc.ToString("dd-MM-yyyy");
+                        f = fecha2.Split('-');
+                        fecha2 = f[2] + "-" + f[1] + "-" + f[0] + @"T00:00:00Z";
+                        q += " AND Fecha:[" + fecha + " TO " + fecha2 + "]";
+                    }
+                    else
+                    {
+                        q += " AND Fecha:'" + fecha + "'";
+                    }
+
+                }
+
+                if (q != "")
+                    bDatos = q;
+
+                string url = "select?fl=" + fl + coleccion + bNorma + bDatos + "&q=Estado:'98'&sort=Fecha asc &start=" + soc.pagina;
+                url = url.Replace("  ", " ");
+                url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
+
+                string fUrl = _configuration["webSolr"] + "/solr/SGD-DOE/" + url;
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fUrl);
+                HttpWebResponse response;
+                response = (HttpWebResponse)request.GetResponse();
+
+                string responseStr = "";
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    Stream responseStream = response.GetResponseStream();
+                    responseStr = new StreamReader(responseStream).ReadToEnd();
+                }
+
+                var expConverter = new ExpandoObjectConverter();
+                dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(responseStr, expConverter);
+
+                resp.Code = "OK";
+                resp.Message = "Búsqueda exitosa";
+                resp.Data = JsonConvert.SerializeObject(obj.response);
+                resp.highlighting = JsonConvert.SerializeObject(obj.highlighting);
+
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                new TechnicalException("Error metodo BuscarSociedad", ex, _configuration);
+                resp.Code = "NotFound";
+                resp.Message = string.Empty;
+                resp.Data = "No es posible buscar por Sociedades, por favor volver a intentar más tarde.";
+
+                return resp;
+            }
+        }
+
+
+        /// <summary>
+        /// Busca código LA.
+        /// </summary>
+        /// <param name="codigo">String con el codigo de La a buscar.
+        /// Los codigos son:
+        /// -CC: Código Civil
+        ///-CCOM: Código de Comercio
+        ///-CP: Código Penal
+        ///-CPC: Código de Procedimiento Civil
+        ///-CPP: Código de Procedimiento Penal
+        ///-CPRO: Código Procesal Penal
+        ///-COT: Código Orgánico de Tribunales
+        ///-COTREF: Código Orgánico de Tribunales Reformado
+        ///-CTRAB: Código del Trabajo
+        ///-CMIN: Código de Minería
+        ///-CTRIB: Código Tributario
+        ///-CDA: Código de Aguas
+        ///-CSAN: Código Sanitario
+        ///-CAE: Código Aeronáutico
+        ///-CIPR: Código de Derecho Internacional Privado
+        ///-CJM: Código de Justicia
+        /// </param>
+        /// <returns>Lista de aciertos segun criterios entregados.</returns>
+        /// <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+        /// <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Route("BuscarSociedad")]
+        public ActionResult<Response> BuscarCodigosLA(String codigo)
+        {
+            Response resp = new Response();
+
+            try
+            {
+                string ruta = _configuration["PATH_:indice"];
+                string indice = System.IO.File.ReadAllText(ruta + "01_Indice_" + codigo + ".html", Encoding.UTF8);
+                
+                resp.Code = "OK";
+                resp.Message = "Búsqueda exitosa";
+                resp.Data = indice;
+                resp.highlighting = string.Empty;
+
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                new TechnicalException("Error metodo BuscarSociedad", ex, _configuration);
+                resp.Code = "NotFound";
+                resp.Message = string.Empty;
+                resp.Data = "No es posible buscar por Sociedades, por favor volver a intentar más tarde.";
+
+                return resp;
+            }
         }
     }
 }

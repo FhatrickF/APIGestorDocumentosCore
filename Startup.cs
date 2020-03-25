@@ -60,7 +60,7 @@ namespace APIGestorDocumentosCore
             {
                 document.Title = "Web API Documental";
                 document.Description = "Api Documental para el consumo de los servicios del sorl";
-                document.Version = "V2.0";
+                document.Version = "V2.2";
                 // CONFIGURAMOS LA SEGURIDAD JWT PARA SWAGGER,
                 // PERMITE AÑADIR EL TOKEN JWT A LA CABECERA.
                 document.AddSecurity("JWT", Enumerable.Empty<string>(),
@@ -97,6 +97,7 @@ namespace APIGestorDocumentosCore
             app.UseSwaggerUi3();
             app.UseCors();
             app.UseMvc();
+         
         }
     }
 }

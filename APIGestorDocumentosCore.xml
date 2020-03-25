@@ -50,6 +50,15 @@
             <response code="401">No Autorizado. No se ha iniciado sesión.</response>
             <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
         </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.getIdByJd(System.String)">
+            <summary>
+            Busca documento po id del Solr
+            </summary>
+            <param name="id"></param>
+            <returns>devuelve objeto Json con información del documento.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
         <member name="M:APIGestorDocumentosCore.Controllers.SolrController.Filtro(APIGestorDocumentosCore.Models.FormularioBusqueda)">
             <summary>
             Busca documentos segun filtro entregado.
@@ -139,6 +148,51 @@
             <returns>devuelve un Json con el documento versionado en html.</returns>
             <response code="401">No Autorizado. No se ha iniciado sesión.</response>               
             <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarBite(APIGestorDocumentosCore.Models.Bite)">
+            <summary>
+            Busca documentos en BITE segun filtro entregado.
+            </summary>
+            <param name="nor">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarSociedad(APIGestorDocumentosCore.Models.Sociedad)">
+            <summary>
+            Busca documentos en Sociedades segun filtro entregado.
+            </summary>
+            <param name="soc">Objeto con filtro para la busqueda.</param>
+            <returns>Lista de aciertos segun criterios entregados.</returns>
+            <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+            <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
+        </member>
+        <member name="M:APIGestorDocumentosCore.Controllers.SolrController.BuscarCodigosLA(System.String)">
+             <summary>
+             Busca código LA.
+             </summary>
+             <param name="codigo">String con el codigo de La a buscar.
+             Los codigos son:
+             -CC: Código Civil
+            -CCOM: Código de Comercio
+            -CP: Código Penal
+            -CPC: Código de Procedimiento Civil
+            -CPP: Código de Procedimiento Penal
+            -CPRO: Código Procesal Penal
+            -COT: Código Orgánico de Tribunales
+            -COTREF: Código Orgánico de Tribunales Reformado
+            -CTRAB: Código del Trabajo
+            -CMIN: Código de Minería
+            -CTRIB: Código Tributario
+            -CDA: Código de Aguas
+            -CSAN: Código Sanitario
+            -CAE: Código Aeronáutico
+            -CIPR: Código de Derecho Internacional Privado
+            -CJM: Código de Justicia
+             </param>
+             <returns>Lista de aciertos segun criterios entregados.</returns>
+             <response code="401">No Autorizado. No se ha iniciado sesión.</response>
+             <response code="400">BadRequest. El protocolo de petición no es el correcto.</response>
         </member>
         <member name="M:APIGestorDocumentosCore.Exceptions.TechnicalException.#ctor(System.String,System.Exception,Microsoft.Extensions.Configuration.IConfiguration)">
             <summary>
