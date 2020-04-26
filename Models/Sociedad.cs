@@ -14,6 +14,9 @@ namespace APIGestorDocumentosCore.Models
         public string Disolucion { get; set; }
         public string FechaD { get; set; }
         public string FechaH { get; set; }
+        public string exacta { get; set; }
+        public string alltext { get; set; }
+        public string ninguna { get; set; }
         public string pagina { get; set; }
     }
 }

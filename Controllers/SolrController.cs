@@ -1904,6 +1904,17 @@ namespace APIGestorDocumentosCore.Controllers
                 if (string.IsNullOrEmpty(q))
                     q = "Norma:'SOCIEDAD MODIFICACION' OR Norma:'EMPRESA INDIVIDUAL MODIFICACION' OR Norma:'OTRA SOCIEDAD MODIFICACION' OR Norma:'SOCIEDAD CONSTITUCION' OR Norma:'EMPRESA INDIVIDUAL CONSTITUCION' OR Norma:'OTRA SOCIEDAD CONSTITUCION' OR Norma:'SOCIEDAD DISOLUCION' OR Norma:'EMPRESA INDIVIDUAL DISOLUCION' OR Norma:'OTRA SOCIEDAD DISOLUCION'";
 
+                if (!string.IsNullOrEmpty(soc.ninguna))
+                    q += " AND NOT Texto :'" + soc.ninguna + "'";
+
+                if (!String.IsNullOrEmpty(soc.exacta))
+                {
+                    q += " AND Texto:'" + soc.exacta + "'";
+                }
+
+                if (!string.IsNullOrEmpty(soc.alltext))
+                    q += " AND Texto:'*" + soc.alltext + "*'";
+
                 if (!string.IsNullOrEmpty(soc.FechaD))
                 {
                     fecha = soc.FechaD.Replace("/", "-");
