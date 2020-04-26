@@ -310,8 +310,13 @@ namespace APIGestorDocumentosCore.Controllers
                     Fecha = f[2] + "\\" + f[1] + "\\" + f[0];
                     Coleccion = "DOE\\" + Fecha;
                 }
+
+                
                 string ruta = directorio_ma + Coleccion + "\\" + idDocumento + ".xml";
-                xml = System.IO.File.ReadAllText(ruta);
+                if (!System.IO.File.Exists(ruta))
+                    throw new Exception("No existe el XML");
+                else
+                    xml = System.IO.File.ReadAllText(ruta);
 
 
                 resp.Code = "OK";
@@ -324,7 +329,7 @@ namespace APIGestorDocumentosCore.Controllers
             {
                 new TechnicalException("Error metodo QueryById", ex, _configuration);
                 resp.Code = "NotFound";
-                resp.Message = string.Empty;
+                resp.Message = ex.Message == "No existe el XML" ? ex.Message : string.Empty;
                 resp.Data = "No es posible buscar por id de documento, por favor volver a intentar más tarde.";
 
                 return resp;
@@ -422,8 +427,10 @@ namespace APIGestorDocumentosCore.Controllers
                     Coleccion = "DOE\\" + Fecha;
                 }
                 string ruta = directorio_ma + Coleccion + "\\" + idDocumento + ".xml";
-                xml = System.IO.File.ReadAllText(ruta);
-
+                if (!System.IO.File.Exists(ruta))
+                    throw new Exception("No existe el XML");
+                else
+                    xml = System.IO.File.ReadAllText(ruta);
 
                 resp.Code = "OK";
                 resp.Message = "Búsqueda exitosa";
@@ -435,7 +442,7 @@ namespace APIGestorDocumentosCore.Controllers
             {
                 new TechnicalException("Error metodo getIdByJd", ex, _configuration);
                 resp.Code = "NotFound";
-                resp.Message = string.Empty;
+                resp.Message = ex.Message == "No existe el XML" ? ex.Message : string.Empty;
                 resp.Data = "No es posible buscar por id de documento (JD), por favor volver a intentar más tarde.";
 
                 return resp;
@@ -1502,7 +1509,7 @@ namespace APIGestorDocumentosCore.Controllers
                     q += " AND Numero:'" + nor.numNorma + "'";
 
                 if (!string.IsNullOrEmpty(nor.organismo))
-                    q += " AND Organismo:'" + nor.organismo + "'";
+                    q += " AND Organismo:*" + nor.organismo + "*";
 
                 if (q != "")
                     bDatos = q;
@@ -1737,7 +1744,7 @@ namespace APIGestorDocumentosCore.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [Route("BuscarSociedad")]
+        [Route("BuscarBite")]
         public ActionResult<Response> BuscarBite(Bite nor)
         {
             Response resp = new Response();
@@ -1872,7 +1879,7 @@ namespace APIGestorDocumentosCore.Controllers
                 string bDatos = string.Empty;
                 string fecha = string.Empty;
                 string fecha2 = string.Empty;
-                string coleccion = "&q=Coleccion:''";
+                string coleccion = "";
                 string fl = "Norma,Numero,Articulo,Inciso,Titulo,Fecha,IdDocumento,Organismo,Estado,Partes,Tribunal,Propiedad";
 
                 if (!String.IsNullOrEmpty(soc.DO))
@@ -1884,7 +1891,8 @@ namespace APIGestorDocumentosCore.Controllers
                 {
                     coleccion = "&q=Coleccion:'RES'";
                 }
-
+                if (String.IsNullOrEmpty(coleccion))
+                    coleccion = "&q=Coleccion:'RES' AND Coleccion:'DONG'";
 
                 if (!String.IsNullOrEmpty(soc.Modificacion))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'SOCIEDAD MODIFICACION' OR Norma:'EMPRESA INDIVIDUAL MODIFICACION' OR Norma:'OTRA SOCIEDAD MODIFICACION' " : "Norma:'SOCIEDAD MODIFICACION' OR Norma:'EMPRESA INDIVIDUAL MODIFICACION' OR Norma:'OTRA SOCIEDAD MODIFICACION' ";
@@ -1893,6 +1901,8 @@ namespace APIGestorDocumentosCore.Controllers
                 if (!String.IsNullOrEmpty(soc.Disolucion))
                     q += (!String.IsNullOrEmpty(q)) ? " OR Norma:'SOCIEDAD DISOLUCION' OR Norma:'EMPRESA INDIVIDUAL DISOLUCION' OR Norma:'OTRA SOCIEDAD DISOLUCION' " : "Norma:'SOCIEDAD DISOLUCION' OR Norma:'EMPRESA INDIVIDUAL DISOLUCION' OR Norma:'OTRA SOCIEDAD DISOLUCION' ";
 
+                if (string.IsNullOrEmpty(q))
+                    q = "Norma:'SOCIEDAD MODIFICACION' OR Norma:'EMPRESA INDIVIDUAL MODIFICACION' OR Norma:'OTRA SOCIEDAD MODIFICACION' OR Norma:'SOCIEDAD CONSTITUCION' OR Norma:'EMPRESA INDIVIDUAL CONSTITUCION' OR Norma:'OTRA SOCIEDAD CONSTITUCION' OR Norma:'SOCIEDAD DISOLUCION' OR Norma:'EMPRESA INDIVIDUAL DISOLUCION' OR Norma:'OTRA SOCIEDAD DISOLUCION'";
 
                 if (!string.IsNullOrEmpty(soc.FechaD))
                 {
@@ -1922,7 +1932,9 @@ namespace APIGestorDocumentosCore.Controllers
                 if (q != "")
                     bDatos = q;
 
-                string url = "select?fl=" + fl + coleccion + bNorma + bDatos + "&q=Estado:'98'&sort=Fecha asc &start=" + soc.pagina;
+                string destacado = "&hl.fl=Texto&hl.simple.post=<%2Fspan>&hl.simple.pre=<span%20class%3D%27MatchDestacado%27>&hl=on";
+
+                string url = "select?fl=" + fl + coleccion + bNorma + bDatos + destacado + "&q=Estado:'98'&sort=Fecha asc &start=" + soc.pagina;
                 url = url.Replace("  ", " ");
                 url = url.Replace(",", "%2C").Replace(" ", "%20").Replace(":", "%3A").Replace("'", "%22");
 
@@ -1952,9 +1964,9 @@ namespace APIGestorDocumentosCore.Controllers
             {
                 new TechnicalException("Error metodo BuscarSociedad", ex, _configuration);
                 resp.Code = "NotFound";
-                resp.Message = string.Empty;
+                resp.Message = ex.Message;
                 resp.Data = "No es posible buscar por Sociedades, por favor volver a intentar más tarde.";
-
+                resp.highlighting = null;
                 return resp;
             }
         }
@@ -1988,7 +2000,7 @@ namespace APIGestorDocumentosCore.Controllers
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [Route("BuscarSociedad")]
+        [Route("BuscarCodigosLA")]
         public ActionResult<Response> BuscarCodigosLA(String codigo)
         {
             Response resp = new Response();
